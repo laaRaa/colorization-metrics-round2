@@ -1,35 +1,47 @@
 # use one of the images from this repository: https://github.com/centreborelli/ipol-docker-images/
 FROM registry.ipol.im/ipol:v2-py3.11-pytorch
 
-# install additional debian packages
+# Install additional Debian packages needed by the project.
 COPY .ipol/packages.txt packages.txt
 RUN apt-get update && apt-get install -y $(cat packages.txt) && rm -rf /var/lib/apt/lists/* && rm packages.txt
 
-# copy the requirements.txt and install python packages
+# Install Python dependencies.
 COPY requirements.txt requirements.txt
 RUN pip3 install --no-cache-dir -r requirements.txt && rm requirements.txt
 
-# copy the code to $bin
+# Copy the project source tree under /workdir/bin.
 ENV bin /workdir/bin/
 RUN mkdir -p $bin
 WORKDIR $bin
-RUN wget "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/maniqa/ckpt_koniq10k.pt"
-RUN wget "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/alexnet-owt-7be5be79.pth"
-RUN wget "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/pt_inception-2015-12-05-6726825d.pth"
-RUN wget "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/squeezenet1_1-b8a52dc0.pth"
-RUN wget "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/vgg16-397923af.pth"
+
+# Download the pretrained demo assets into the same layout used by the repo and
+# the run script. These files are expected to be hosted under demoextras/ on your
+# IPOL server. The main point is that the runtime user must be able to write to
+# /home/ipol/.cache, so the run script never writes under $BIN.
+RUN mkdir -p $bin/maniqa $bin/torch/hub/checkpoints && \
+    wget -q -O $bin/maniqa/ckpt_koniq10k.pt \
+      "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/maniqa/ckpt_koniq10k.pt" && \
+    wget -q -O $bin/torch/hub/checkpoints/alexnet-owt-7be5be79.pth \
+      "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/alexnet-owt-7be5be79.pth" && \
+    wget -q -O $bin/torch/hub/checkpoints/pt_inception-2015-12-05-6726825d.pth \
+      "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/pt_inception-2015-12-05-6726825d.pth" && \
+    wget -q -O $bin/torch/hub/checkpoints/squeezenet1_1-b8a52dc0.pth \
+      "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/squeezenet1_1-b8a52dc0.pth" && \
+    wget -q -O $bin/torch/hub/checkpoints/vgg16-397923af.pth \
+      "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/vgg16-397923af.pth"
+
 COPY . .
 
-# the execution will happen in the folder /workdir/exec
-# it will be created by IPOL
-
-# some QoL tweaks
+# The execution will happen in /workdir/exec, created by IPOL.
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION python
 ENV PATH $bin:$PATH
 
-# $HOME is writable by the user `ipol`
+# Make $HOME writable by the ipol user, and leave a writable cache area for PyTorch.
 ENV HOME /home/ipol
-# chmod 777 so that any user can use the HOME, in case the docker is run with -u 1001:1001
-RUN groupadd -g 1000 ipol && useradd -m -u 1000 -g 1000 ipol -d $HOME && chmod -R 777 $HOME
+RUN groupadd -g 1000 ipol || true && \
+    useradd -m -u 1000 -g 1000 ipol -d $HOME 2>/dev/null || true && \
+    mkdir -p /home/ipol/.cache /home/ipol/.cache/torch /home/ipol/.cache/maniqa && \
+    chmod -R 777 $HOME && \
+    chmod -R 777 $bin
 USER ipol
