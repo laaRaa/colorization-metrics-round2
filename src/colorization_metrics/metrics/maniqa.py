@@ -16,9 +16,38 @@ Usage:
 
 from pathlib import Path
 
-from maniqa.inference import infer_score
+import torch
 
 from colorization_metrics.utils import get_dir_imgs
+
+
+def _infer_score_cpu_safe(img_path: str) -> float:
+    """Run MANIQA on CPU when the checkpoint was saved for CUDA.
+
+    The IPOL runtime is CPU-only, while the MANIQA checkpoint may have been
+    serialized with CUDA device tensors. In that case, torch.load() raises a
+    RuntimeError unless map_location is set to CPU.
+    """
+    from maniqa.inference import infer_score
+
+    try:
+        return infer_score(img_path)
+    except RuntimeError as exc:
+        msg = str(exc)
+        if "Attempting to deserialize object on a CUDA device" not in msg:
+            raise
+
+        original_torch_load = torch.load
+
+        def _cpu_map_location(*args, **kwargs):
+            kwargs.setdefault("map_location", torch.device("cpu"))
+            return original_torch_load(*args, **kwargs)
+
+        torch.load = _cpu_map_location
+        try:
+            return infer_score(img_path)
+        finally:
+            torch.load = original_torch_load
 
 # ------------------------------------------------------------
 # PUBLIC FUNCTIONS
@@ -35,8 +64,8 @@ def compute_maniqa(img_path: str | Path) -> float:
         The MANIQA score of the image.
     """
     try:
-        return infer_score(str(img_path))
-    except ValueError:
+        return _infer_score_cpu_safe(str(img_path))
+    except (RuntimeError, ValueError):
         return float("nan")
 
 
@@ -53,8 +82,8 @@ def compute_maniqa_dir(img_dir: str | Path) -> float:
     mean_maniqa = 0.0
     try:
         for img_name in img_list:
-            mean_maniqa += infer_score(str(Path(img_dir) / img_name))
-    except ValueError:
+            mean_maniqa += _infer_score_cpu_safe(str(Path(img_dir) / img_name))
+    except (RuntimeError, ValueError):
         return float("nan")
     return mean_maniqa / len(img_list)
 
