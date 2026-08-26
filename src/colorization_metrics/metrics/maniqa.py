@@ -14,6 +14,8 @@ Usage:
     >>> maniqa = compute_maniqa_dir("path_to_colored_frames_dir")
 """
 
+import sys
+import traceback
 from pathlib import Path
 
 import torch
@@ -66,7 +68,12 @@ def compute_maniqa(img_path: str | Path) -> float:
     """
     try:
         return _infer_score_cpu_safe(str(img_path))
-    except (RuntimeError, ValueError):
+    except Exception as exc:  # pragma: no cover - demo/runtime guard
+        print(
+            f"MANIQA failed for {img_path}: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        traceback.print_exc(file=sys.stderr)
         return float("nan")
 
 
@@ -84,7 +91,12 @@ def compute_maniqa_dir(img_dir: str | Path) -> float:
     try:
         for img_name in img_list:
             mean_maniqa += _infer_score_cpu_safe(str(Path(img_dir) / img_name))
-    except (RuntimeError, ValueError):
+    except Exception as exc:  # pragma: no cover - demo/runtime guard
+        print(
+            f"MANIQA batch failed for {img_dir}: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        traceback.print_exc(file=sys.stderr)
         return float("nan")
     return mean_maniqa / len(img_list)
 
