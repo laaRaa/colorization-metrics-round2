@@ -1,0 +1,85 @@
+# NOTE: Description
+[project]
+name = "colorization-metrics"
+version = "0.1.0"
+description = "A tool for quantitative assessment of video colorization."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Nicolas MAIGNAN", email = "nicolas.maignan@univ-lorraine.fr" },
+]
+keywords = ["colorization", "measure", "metrics"]
+# NOTE: Dependencies
+dependencies = [
+  "av>=14.4.0",
+  "cic",
+  "libsvm-official>=3.36.0",
+  "lpips>=0.1.4",
+  "maniqa",
+  "matpy",
+  "numpy>=2.2.6",
+  "pytorch-fid>=0.3.0",
+  "scikit-image>=0.25.2",
+  "scikit-learn>=1.7.0",
+  "scipy>=1.15.3",
+  "tqdm>=4.67.1",
+]
+
+# NOTE: URLs
+[project.urls]
+repository = "https://gitlab.univ-lorraine.fr/maignan2/colorization-metrics"
+
+# NOTE: Scripts
+[project.scripts]
+evaluate_colorization = "colorization_metrics.main_cli:main"
+
+# NOTE: Optional dependencies
+[dependency-groups]
+dev = [
+  "ruff>=0.12.0",
+  "ty>=0.0.44",
+]
+dataset = [
+  "matplotlib>=3.10.3",
+  "pandas>=2.3.0",
+  "requests>=2.32.4",
+  "tables>=3.10.1",
+]
+
+# NOTE: Builder
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# NOTE: Linters and formatter
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+[tool.ruff.format]
+docstring-code-format = true
+line-ending = "lf"
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812",  # Ruff formats, so redundant
+  "TD",  # Yeah, too complex for one person project
+  "PLC0415",  # Remove when in Python with lazy imports
+  "FIX",  # Editors should highlight those, but dev notes mustn't block commit
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["colorization_metrics"]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.uv.sources]
+maniqa = { git = "https://gitlab.inria.fr/anr-arce/sota/MANIQA" }
+matpy = { git = "https://gitlab.inria.fr/anr-arce/utils/matpy" }
+cic = { git = "https://gitlab.inria.fr/anr-arce/sota/cic.git" }
