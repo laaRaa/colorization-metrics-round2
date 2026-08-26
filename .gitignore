@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.eggs/
+*.egg
+/dist/
+/build/
+# Virtual environments
+.venv/
+venv/
+ENV/
+.env
+# PyTorch checkpoints / weights
+*.pt
+*.pth
+*.ckpt
+*.pth.tar
+# Common cache dirs
+__pycache__/
+.cache/
+*.cache
+/home/*/.cache/
+# Data and results
+results/
+data/**/allmodel
+data/**/allrange
+# macOS
+.DS_Store
+# IPython
+.ipynb_checkpoints/
+# Misc
+*.log
+*.sqlite
