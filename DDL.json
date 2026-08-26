@@ -1,0 +1,117 @@
+{
+   "general": {
+      "demo_title": "A survey of metrics used for image colorization assessment",
+      "description": "<p>This demo evaluates a colorized image with a panel of image-quality metrics surveyed in the companion article. Two usage modes are supported, depending on what is uploaded:</p><ul><li><b>Single image</b> (colorized only): runs the <i>referenceless</i> metrics only &mdash; <b>BRISQUE</b>, <b>NIQE</b>, <b>MANIQA</b>, <b>Colorfulness</b>.</li><li><b>Paired</b> (colorized + ground-truth color reference): additionally runs the <i>reference-based</i> metrics &mdash; <b>PSNR</b>, <b>SSIM</b>, <b>LPIPS</b>, <b>FID</b>.</li></ul><p>Higher is better for PSNR, SSIM, MANIQA, and Colorfulness; lower is better for LPIPS, FID, BRISQUE, and NIQE.</p>",
+      "input_description": "<p>Two modes are admissible: (a) upload <b>only</b> the colorized image to evaluate &mdash; the four no-reference metrics will be computed; or (b) upload a <b>pair</b> of images &mdash; the colorized image (slot 1) and its ground-truth color reference (slot 2) &mdash; to additionally compute the four reference-based metrics.</p>",
+      "xlink_article": "",
+      "requirements": "docker",
+      "timeout": 600
+   },
+   "build": {
+      "url": "https://github.com/laaRaa/colorization-metrics-round2.git",
+      "rev": "origin/main",
+      "dockerfile": ".ipol/Dockerfile"
+   },
+   "inputs": [
+      {
+         "description": "Colorized image (to evaluate)",
+         "type": "image",
+         "dtype": "3x8i",
+         "ext": ".png",
+         "max_pixels": "1024*1024"
+      },
+      {
+         "description": "Ground-truth color reference (optional &mdash; provide for the four reference-based metrics)",
+         "type": "image",
+         "dtype": "3x8i",
+         "ext": ".png",
+         "max_pixels": "1024*1024",
+         "required": false
+      }
+   ],
+   "params": [
+      {
+         "id": "color_space",
+         "type": "selection_radio",
+         "label": "PSNR color space",
+         "comments": "Affects PSNR only. CIELAB averages over the a*/b* chrominance channels; RGB averages over all three channels.",
+         "values": {
+            "CIELAB (a*, b*)": "lab",
+            "RGB": "rgb"
+         },
+         "default_value": "lab"
+      },
+      {
+         "id": "LPIPS_net",
+         "type": "selection_collapsed",
+         "label": "LPIPS backbone",
+         "comments": "Pre-trained network used to extract perceptual features. Used only in paired mode.",
+         "values": {
+            "AlexNet": "alex",
+            "VGG": "vgg",
+            "SqueezeNet": "squeeze"
+         },
+         "default_value": "alex"
+      },
+      {
+         "id": "fid_dims",
+         "type": "selection_collapsed",
+         "label": "FID feature dimensionality",
+         "comments": "Inception V3 layer used for FID features. Lower dimensions are recommended for small datasets such as a single-image comparison. Used only in paired mode.",
+         "values": {
+            "64 (first pool)": "64",
+            "192 (second pool)": "192",
+            "768 (pre-auxiliary)": "768",
+            "2048 (final pool)": "2048"
+         },
+         "default_value": "64"
+      },
+      {
+         "id": "colorfulness_type",
+         "type": "selection_collapsed",
+         "label": "Colorfulness variant",
+         "comments": "Three variants from the literature. v1 and v2 operate on CIELAB chrominance; v3 operates on RGB rg/yb opponent channels.",
+         "values": {
+            "v1: sigma_ab + 0.37 * mu_ab (CIELAB)": "1",
+            "v2: sigma_ab + 0.94 * mu_C (CIELAB)": "2",
+            "v3: sigma_rgyb + 0.30 * mu_rgyb (RGB)": "3"
+         },
+         "default_value": "3"
+      }
+   ],
+    "run": "bash $bin/run.sh $bin input_0.png input_1.png $color_space $LPIPS_net $fid_dims $colorfulness_type",
+   "results": [
+      {
+         "type": "gallery",
+         "label": "<h3>Inputs</h3>",
+         "contents": {
+            "Colorized": {
+               "img": "input_0.png"
+            },
+            "Ground truth": {
+               "img": "input_1.png"
+            }
+         }
+      },
+      {
+         "type": "text_file",
+         "label": "<h3>Computed metrics</h3>",
+         "contents": "stdout.txt",
+         "style": "{'font-family':'monospace', 'width':'40em', 'background-color':'#FFE'}"
+      }
+   ],
+   "archive": {
+      "files": {
+         "input_0.png": "Colorized image",
+         "input_1.png": "Ground truth (if provided)",
+         "stdout.txt": "Metric scores"
+      },
+      "params": [
+         "color_space",
+         "LPIPS_net",
+         "fid_dims",
+         "colorfulness_type"
+      ],
+      "enable_reconstruct": true
+   }
+}
