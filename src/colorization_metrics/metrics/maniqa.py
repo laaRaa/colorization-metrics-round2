@@ -24,12 +24,13 @@ from colorization_metrics.utils import get_dir_imgs
 
 
 def _force_cpu_for_maniqa() -> None:
-    """Force the external MANIQA inference code to stay on CPU.
+    """Keep the external MANIQA inference code on CPU when needed.
 
-    The upstream implementation calls `.cuda()` internally during inference. In the
-    IPOL demo, no NVIDIA driver is available, so those calls fail before the model
-    can produce a score. This compatibility shim makes the demo keep using the CPU
-    without altering the metric definition or architecture.
+    The upstream implementation calls `.cuda()` internally during inference. In
+    CPU-only or constrained demo environments, those calls may fail unless the
+    checkpoint and tensors are mapped to CPU before loading and inference. This
+    compatibility shim preserves the original metric definition and architecture
+    while keeping the demo executable in such environments.
     """
     if torch.cuda.is_available():
         return
@@ -52,11 +53,11 @@ def _force_cpu_for_maniqa() -> None:
 def _infer_score_cpu_safe(img_path: str) -> float:
     """Run MANIQA on CPU when the checkpoint was saved for CUDA.
 
-    This is a demo/runtime compatibility layer for the IPOL CPU-only environment.
-    It does not change the metric definition or the network architecture; it only
-    makes sure that a CUDA-serialized checkpoint can be loaded on a CPU machine by
-    mapping it to CPU before deserialization, and that the legacy MANIQA inference
-    library does not trigger CUDA calls in an environment without an NVIDIA driver.
+    This is a demo/runtime compatibility layer for constrained execution
+    environments. It does not change the metric definition or the network
+    architecture; it only ensures that a CUDA-serialized checkpoint can be loaded
+    on CPU by mapping it before deserialization, and that the legacy MANIQA
+    inference library does not trigger CUDA calls in CPU-only settings.
     """
     from maniqa.inference import infer_score
 
