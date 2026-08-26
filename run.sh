@@ -31,17 +31,22 @@ export XDG_CACHE_HOME=/home/ipol/.cache
 export TORCH_HOME=/home/ipol/.cache/torch
 mkdir -p /home/ipol/.cache /home/ipol/.cache/maniqa /home/ipol/.cache/torch/hub/checkpoints
 
-# MANIQA checkpoint: prefer the repo-local version if it exists, otherwise use a
-# copy placed at the root of BIN during Docker build.
+# MANIQA checkpoint: prefer the CPU-safe checkpoint for the demo runtime and keep
+# a fallback to the original CUDA-serialized checkpoint if it is the only option.
 MANIQA_LOCAL=""
-if [ -f "$BIN/maniqa/ckpt_koniq10k.pt" ]; then
+if [ -f "$BIN/maniqa/ckpt_koniq10k_cpu.pt" ]; then
+    MANIQA_LOCAL="$BIN/maniqa/ckpt_koniq10k_cpu.pt"
+    echo "Using CPU-safe MANIQA checkpoint at $MANIQA_LOCAL" >&2
+elif [ -f "$BIN/maniqa/ckpt_koniq10k.pt" ]; then
     MANIQA_LOCAL="$BIN/maniqa/ckpt_koniq10k.pt"
+    echo "Using CUDA-exported MANIQA checkpoint at $MANIQA_LOCAL" >&2
 elif [ -f "$BIN/ckpt_koniq10k.pt" ]; then
     MANIQA_LOCAL="$BIN/ckpt_koniq10k.pt"
+    echo "Using root-level MANIQA checkpoint at $MANIQA_LOCAL" >&2
 fi
 
 if [ -z "$MANIQA_LOCAL" ]; then
-    echo "ERROR: MANIQA checkpoint not found at $BIN/maniqa/ckpt_koniq10k.pt or $BIN/ckpt_koniq10k.pt." >&2
+    echo "ERROR: MANIQA checkpoint not found at $BIN/maniqa/ckpt_koniq10k_cpu.pt, $BIN/maniqa/ckpt_koniq10k.pt, or $BIN/ckpt_koniq10k.pt." >&2
     exit 1
 fi
 

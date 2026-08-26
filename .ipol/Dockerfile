@@ -16,11 +16,12 @@ WORKDIR $bin
 
 # Download the pretrained demo assets into the same layout used by the repo and
 # the run script. These files are expected to be hosted under demoextras/ on your
-# IPOL server. The main point is that the runtime user must be able to write to
-# /home/ipol/.cache, so the run script never writes under $BIN.
+# IPOL server. We prefer the CPU-safe MANIQA checkpoint so the demo runs in the
+# CPU-only IPOL environment. The run script also keeps a fallback for CUDA-serialized
+# checkpoints when they are available.
 RUN mkdir -p $bin/maniqa $bin/torch/hub/checkpoints && \
-    wget -q -O $bin/maniqa/ckpt_koniq10k.pt \
-      "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/maniqa/ckpt_koniq10k.pt" && \
+    wget -q -O $bin/maniqa/ckpt_koniq10k_cpu.pt \
+      "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/maniqa/ckpt_koniq10k_cpu.pt" && \
     wget -q -O $bin/torch/hub/checkpoints/alexnet-owt-7be5be79.pth \
       "https://dev.ipol.im:4443/~lraad/a_survey_of_metrics_used_for_image_colorization_assessment_tmp/demoextras/torch/hub/checkpoints/alexnet-owt-7be5be79.pth" && \
     wget -q -O $bin/torch/hub/checkpoints/pt_inception-2015-12-05-6726825d.pth \

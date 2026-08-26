@@ -24,9 +24,10 @@ from colorization_metrics.utils import get_dir_imgs
 def _infer_score_cpu_safe(img_path: str) -> float:
     """Run MANIQA on CPU when the checkpoint was saved for CUDA.
 
-    The IPOL runtime is CPU-only, while the MANIQA checkpoint may have been
-    serialized with CUDA device tensors. In that case, torch.load() raises a
-    RuntimeError unless map_location is set to CPU.
+    This is a demo/runtime compatibility layer for the IPOL CPU-only environment.
+    It does not change the metric definition or the network architecture; it only
+    makes sure that a CUDA-serialized checkpoint can be loaded on a CPU machine by
+    mapping it to CPU before deserialization.
     """
     from maniqa.inference import infer_score
 
